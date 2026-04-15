@@ -3,10 +3,21 @@ import { CreativePlan, ContentStyle, AspectRatio, UploadedFile } from "../types"
 
 const getAIClient = () => {
   const storedKey = localStorage.getItem('naikthreads_google_key');
-  const apiKey = (storedKey && storedKey !== 'system_default') ? storedKey : process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key tidak ditemukan. Silakan masukkan API Key Anda.");
+  
+  // Ambil dari berbagai sumber potensial
+  const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (process.env as any).GEMINI_API_KEY;
+  
+  let apiKey = (storedKey && storedKey !== 'system_default') ? storedKey : envKey;
+
+  // Bersihkan jika nilainya adalah string "undefined" atau "null" (sering terjadi di Vercel/Vite)
+  if (apiKey === 'undefined' || apiKey === 'null' || !apiKey) {
+    apiKey = '';
   }
+
+  if (apiKey.length < 10) {
+    throw new Error("API Key tidak valid. Silakan klik tombol 'RESET API KEY' di atas dan masukkan kunci yang benar.");
+  }
+
   return new GoogleGenAI({ apiKey });
 };
 

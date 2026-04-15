@@ -1,6 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Header: React.FC = () => {
+  const [apiStatus, setApiStatus] = useState<'connected' | 'disconnected'>('disconnected');
+
+  useEffect(() => {
+    const checkKey = () => {
+      const storedKey = localStorage.getItem('naikthreads_google_key');
+      const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (process.env as any).GEMINI_API_KEY;
+      const key = (storedKey && storedKey !== 'system_default') ? storedKey : envKey;
+      
+      if (key && key.length > 10 && key !== 'undefined' && key !== 'null') {
+        setApiStatus('connected');
+      } else {
+        setApiStatus('disconnected');
+      }
+    };
+
+    checkKey();
+    window.addEventListener('storage', checkKey);
+    return () => window.removeEventListener('storage', checkKey);
+  }, []);
+
   return (
     <header className="py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,9 +32,17 @@ const Header: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                Naik<span className="text-blue-600">Photo</span>
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                  Naik<span className="text-blue-600">Photo</span>
+                </h1>
+                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  apiStatus === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${apiStatus === 'connected' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
+                  {apiStatus === 'connected' ? 'API Aktif' : 'API Belum Terhubung'}
+                </div>
+              </div>
               <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Creative Studio</p>
             </div>
           </div>

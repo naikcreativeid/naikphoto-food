@@ -74,8 +74,13 @@ const App: React.FC = () => {
             } catch (e: any) {
                 console.warn(`Attempt ${attempt + 1} failed for image ${i}`, e);
                 const errorMessage = e?.message || '';
+                
                 if (errorMessage.includes('403') || errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('limit')) {
-                    throw new Error("API Key Google Anda tidak memiliki kuota (Limit = 0). Untuk membuat gambar, API Key Anda WAJIB terhubung dengan akun Google Cloud yang memiliki BILLING AKTIF. Silakan klik tombol 'RESET API KEY' di bagian atas untuk memasukkan kunci baru atau gunakan 'Kunci Bawaan Sistem'.");
+                    throw new Error("KUOTA HABIS/LIMIT 0: Google membatasi pembuatan gambar untuk API Key gratis tanpa Billing. Solusi: 1. Gunakan API Key lain, 2. Hubungkan Billing di Google Cloud (tetap gratis di bawah limit), atau 3. Klik RESET API KEY di atas.");
+                }
+                
+                if (errorMessage.includes('API key not valid')) {
+                    throw new Error("API KEY TIDAK VALID: Kunci yang dimasukkan salah. Silakan klik RESET API KEY di bagian atas.");
                 }
             }
         }
