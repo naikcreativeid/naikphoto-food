@@ -214,28 +214,56 @@ export const generateImage = async (
   prompt: string, 
   files: Record<string, UploadedFile>
 ): Promise<string> => {
-  const parts: any[] = [{ text: prompt }];
+  try {
+    const parts: any[] = [{ text: prompt }];
 
-  // Context injection for image editing/variation
-  if (files.productImage) {
-    parts.push({ inlineData: { mimeType: files.productImage.type, data: files.productImage.base64 } });
+    if (files.productImage) {
+      parts.push({ inlineData: { mimeType: files.productImage.type, data: files.productImage.base64 } });
+    }
+    if (files.modelImage) {
+       parts.push({ inlineData: { mimeType: files.modelImage.type, data: files.modelImage.base64 } });
+    }
+
+    const response = await getAIClient().models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts }
+    });
+
+    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (!imagePart || !imagePart.inlineData?.data) {
+      throw new Error("Failed to generate image");
+    }
+
+    return `data:image/png;base64,${imagePart.inlineData.data}`;
+  } catch (error: any) {
+    const msg = error.message || '';
+    // Jika error kuota atau limit, gunakan fallback ke Pollinations.ai
+    if (msg.includes('quota') || msg.includes('limit') || msg.includes('429') || msg.includes('403')) {
+      console.warn("Gemini Image Quota Exceeded. Switching to Fallback Engine...");
+      return generateFallbackImage(prompt);
+    }
+    throw error;
   }
-  // We can add model/bg if needed, but usually product is the key for variation
-  if (files.modelImage) {
-     parts.push({ inlineData: { mimeType: files.modelImage.type, data: files.modelImage.base64 } });
+};
+
+// Fungsi Cadangan Gratis (Tanpa API Key)
+const generateFallbackImage = async (prompt: string): Promise<string> => {
+  const seed = Math.floor(Math.random() * 1000000);
+  const encodedPrompt = encodeURIComponent(prompt + ", high quality, food photography, cinematic lighting");
+  // Menggunakan Pollinations.ai sebagai fallback gratis
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true`;
+  
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    throw new Error("Gagal membuat gambar baik melalui Google maupun Server Cadangan.");
   }
-
-  const response = await getAIClient().models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: { parts }
-  });
-
-  const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-  if (!imagePart || !imagePart.inlineData?.data) {
-    throw new Error("Failed to generate image");
-  }
-
-  return `data:image/png;base64,${imagePart.inlineData.data}`;
 };
 
 export const generateVideoPrompt = async (imageBase64: string): Promise<string> => {
