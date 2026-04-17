@@ -225,7 +225,7 @@ export const generateImage = async (
     }
 
     const response = await getAIClient().models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-pro-image',
       contents: { parts }
     });
 
@@ -292,7 +292,7 @@ export const generateVideoPrompt = async (imageBase64: string): Promise<string> 
 
 export const generateTTS = async (text: string, voiceName: string): Promise<{ data: string, sampleRate: number }> => {
   const response = await getAIClient().models.generateContent({
-    model: 'gemini-2.5-flash-preview-tts',
+    model: 'Lyria-3-Pro-Preview',
     contents: { parts: [{ text }] },
     config: {
       responseModalities: [Modality.AUDIO],
